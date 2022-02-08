@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:latest
 
 ARG PREFIX=/usr/local
 ARG GPU_ARCH=";"
@@ -7,31 +7,36 @@ ARG USE_TARGETID="OFF"
 ARG USE_MLIR="OFF"
 ARG USE_FIN="OFF"
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Support multiarch
 RUN dpkg --add-architecture i386
+
+RUN apt-get update && apt-get install -y --allow-unauthenticated --no-install-recommends \
+    lsb-release
 
 # Add rocm repository
 # Note: The ROCm version with $USE_MLIR should keep in sync with default ROCm version
 # unless MLIR library is incompatible with current ROCm.
 
 RUN if [ "$USE_MLIR" = "ON" ] ; \
-        then export ROCM_APT_VER=.apt_4.3.1;\
-    else export ROCM_APT_VER=.apt_4.3.1;  \
+        then export ROCM_APT_VER=4.5.2;\
+    else export ROCM_APT_VER=4.5.2;  \
     fi && \
 echo $ROCM_APT_VER &&\
-sh -c 'echo deb [arch=amd64 trusted=yes] http://repo.radeon.com/rocm/apt/$ROCM_APT_VER/ xenial main > /etc/apt/sources.list.d/rocm.list'
-RUN sh -c "echo deb http://mirrors.kernel.org/ubuntu xenial main universe | tee -a /etc/apt/sources.list"
+sh -c 'echo deb [arch=amd64 trusted=yes] http://repo.radeon.com/rocm/apt/$ROCM_APT_VER/ ubuntu main > /etc/apt/sources.list.d/rocm.list'
+RUN sh -c "echo deb http://mirrors.kernel.org/ubuntu $(lsb_release -cs) main universe | tee -a /etc/apt/sources.list"
 
 #Add gpg keys
 # Install dependencies
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated \
+RUN apt-get update && apt-get install -y --allow-unauthenticated --no-install-recommends \
     wget \
     ca-certificates \
     curl \
     libnuma-dev \
     gnupg && \
 wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | apt-key add - && \
-apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated \
+apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated --no-install-recommends \
     apt-utils \
     build-essential \
     cmake \
@@ -49,11 +54,8 @@ apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unau
     llvm-amdgpu \
     miopengemm \
     pkg-config \
-    python \
     python3 \
-    python-dev \
     python3-dev \
-    python-pip \
     python3-pip \
     python3-distutils \
     python3-venv \
